@@ -1,31 +1,38 @@
+import 'package:chat_app/views/cubits/chat_cubit/chat_cubit.dart';
+import 'package:chat_app/views/cubits/login_cubit/login_cubit.dart';
 import 'package:chat_app/views/signUp_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
 
 import '../components/constant/constant.dart';
 import '../components/components.dart';
 import 'chat_screen.dart';
 
-class SignInScreen extends StatefulWidget {
-  SignInScreen({super.key});
-  static String id = 'signInScreen';
-
-  @override
-  State<SignInScreen> createState() => _SignInScreenState();
-}
-
-class _SignInScreenState extends State<SignInScreen> {
+class SignInScreen extends StatelessWidget {
   String? email, password;
-
+  static String id = 'SignInScreen';
   GlobalKey<FormState> formKey = GlobalKey();
 
   bool isLoading = false;
 
   @override
   Widget build(BuildContext context) {
-    return ModalProgressHUD(
-      inAsyncCall: isLoading,
+    return BlocConsumer<LoginCubit, LoginState>(
+      listener: (context, state) {
+        if (state is LoginLoading) {
+          isLoading = true;
+        } else if (state is LoginSuccess) {
+          BlocProvider.of<ChatCubit>(context).getMessage();
+          Navigator.pushNamed(context, ChatScreen.chatId,arguments: email);
+        } else if (state is LoginFailure) {
+          showSnackBar(context, state.errorMessage);
+        }
+      },
+      builder: (context , state) => ModalProgressHUD(
+      inAsyncCall: BlocProvider.of<LoginCubit>(context).isLoading,
       child: Scaffold(
         backgroundColor: kPrimaryColor,
         body: Padding(
@@ -90,7 +97,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     password = data;
                   },
                   text: 'Enter your password',
-                  icon: Icons.password,
+                  icon: Icons.lock,
                 ),
                 const SizedBox(
                   height: 20,
@@ -98,26 +105,10 @@ class _SignInScreenState extends State<SignInScreen> {
                 CustomButton(
                   onPressed: () async {
                     if (formKey.currentState!.validate()) {
-                      setState(() {
-                        isLoading = true;
-                      });
-                      try {
-                        await signInUser();
-                        Navigator.pushNamed(context, ChatScreen.chatId,
-                            arguments: email);
-                      } on FirebaseAuthException catch (e) {
-                        if (e.code == 'user not found') {
-                          showSnackBar(context, 'No user for that e-mail');
-                        } else if (e.code == 'wrong password') {
-                          showSnackBar(context, 'wrong password');
-                        }
-                      } catch (e) {
-                        print(e);
-                        showSnackBar(context, 'there was an error');
-                      }
-                      setState(() {
-                        isLoading = false;
-                      });
+                      BlocProvider.of<LoginCubit>(context).signInUser(
+                        email: email!,
+                        password: password!,
+                      );
                     } else {}
                   },
                   textButton: 'Sign In',
@@ -147,12 +138,7 @@ class _SignInScreenState extends State<SignInScreen> {
           ),
         ),
       ),
+    ),
     );
-  }
-
-//method not function
-  Future<void> signInUser() async {
-    UserCredential userCredential = await FirebaseAuth.instance
-        .signInWithEmailAndPassword(email: email!, password: password!);
   }
 }
