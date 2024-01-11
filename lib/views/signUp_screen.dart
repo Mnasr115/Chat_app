@@ -1,6 +1,6 @@
 import 'package:chat_app/components/constant/constant.dart';
+import 'package:chat_app/views/bloc/auth_bloc/auth_bloc.dart';
 import 'package:chat_app/views/chat_screen.dart';
-import 'package:chat_app/views/cubits/redister_cubit/register_cubit.dart';
 import 'package:chat_app/views/signIn_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -17,19 +17,21 @@ class SignUpScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<RegisterCubit, RegisterState>(
+    return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is RegisterLoaded) {
           isLoading = true;
         } else if (state is RegisterSuccess) {
           Navigator.pushNamed(context, SignInScreen.id);
+          isLoading = false;
         } else if (state is RegisterFailure) {
           showSnackBar(context, state.errorMessage);
+          isLoading = false;
         }
       },
       builder: (context, state) {
         return ModalProgressHUD(
-          inAsyncCall: BlocProvider.of<RegisterCubit>(context).isLoading,
+          inAsyncCall: isLoading,
           child: Scaffold(
             backgroundColor: kPrimaryColor,
             body: Padding(
@@ -104,10 +106,7 @@ class SignUpScreen extends StatelessWidget {
                       onPressed: () async {
                         {
                           if (_formKey.currentState!.validate()) {
-                            BlocProvider.of<RegisterCubit>(context).signUpUser(
-                              email: email!,
-                              password: password!,
-                            );
+                            BlocProvider.of<AuthBloc>(context).add(RegisterEvent(email: email!, password: password!));
                           } else {}
                         }
                       },

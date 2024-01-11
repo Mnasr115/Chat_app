@@ -1,5 +1,4 @@
-import 'package:chat_app/views/cubits/chat_cubit/chat_cubit.dart';
-import 'package:chat_app/views/cubits/login_cubit/login_cubit.dart';
+
 import 'package:chat_app/views/signUp_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -9,6 +8,8 @@ import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
 
 import '../components/constant/constant.dart';
 import '../components/components.dart';
+import 'bloc/auth_bloc/auth_bloc.dart';
+import 'chat_cubit/chat_cubit.dart';
 import 'chat_screen.dart';
 
 class SignInScreen extends StatelessWidget {
@@ -20,19 +21,21 @@ class SignInScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<LoginCubit, LoginState>(
+    return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is LoginLoading) {
           isLoading = true;
         } else if (state is LoginSuccess) {
           BlocProvider.of<ChatCubit>(context).getMessage();
           Navigator.pushNamed(context, ChatScreen.chatId,arguments: email);
+          isLoading = false ;
         } else if (state is LoginFailure) {
           showSnackBar(context, state.errorMessage);
+          isLoading = false ;
         }
       },
       builder: (context , state) => ModalProgressHUD(
-      inAsyncCall: BlocProvider.of<LoginCubit>(context).isLoading,
+      inAsyncCall: isLoading,
       child: Scaffold(
         backgroundColor: kPrimaryColor,
         body: Padding(
@@ -105,10 +108,7 @@ class SignInScreen extends StatelessWidget {
                 CustomButton(
                   onPressed: () async {
                     if (formKey.currentState!.validate()) {
-                      BlocProvider.of<LoginCubit>(context).signInUser(
-                        email: email!,
-                        password: password!,
-                      );
+                      BlocProvider.of<AuthBloc>(context).add(LoginEvent(email: email!, password: password!));
                     } else {}
                   },
                   textButton: 'Sign In',

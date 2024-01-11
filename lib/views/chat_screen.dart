@@ -1,11 +1,11 @@
 import 'package:chat_app/components/constant/constant.dart';
 import 'package:chat_app/models/message_model.dart';
-import 'package:chat_app/views/cubits/chat_cubit/chat_cubit.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../components/components.dart';
+import 'chat_cubit/chat_cubit.dart';
 
 
 class ChatScreen extends StatelessWidget {
